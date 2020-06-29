@@ -2,6 +2,9 @@ import os, math, re, json, imageio, cv2
 import exifread
 import numpy as np
 
+# Need some pylibs: exifread, imageio, cv2, numpy
+# Need some bin in $PATH: ffmpeg
+
 ##############################
 input_path = "."
 input_filename = "IMG_\d+_.+.jpg"
