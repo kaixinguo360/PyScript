@@ -1,9 +1,13 @@
+#!/usr/bin/python3
 import os, math, re, json, imageio, cv2
 import exifread
 import numpy as np
 
-# Need some pylibs: exifread, imageio, cv2, numpy
-# Need some bin in $PATH: ffmpeg
+# Need some pylibs:
+# sudo -H pip install exifread imageio imageio-ffmpeg opencv-python numpy
+
+# Need some bin in $PATH
+# ffmpeg: Download from https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-4.3-win64-static.zip
 
 ##############################
 input_path = "."
@@ -24,6 +28,10 @@ files.sort()
 
 matcher = re.compile(input_filename) # 过滤文件名
 files = list(filter(lambda file: matcher.match(file), files))
+
+if len(files) <= 0:
+    print('[ERROR]', 'No input file.')
+    exit()
 
 # Prepare Output #
 
