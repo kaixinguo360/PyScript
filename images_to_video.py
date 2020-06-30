@@ -57,7 +57,10 @@ output = `{}/{}.{}`
 # Prepare Input #
 
 files = os.listdir(input_path) # 得到文件夹下的所有文件名称
+# 按文件名排序
 files.sort()
+# 按时间排序
+#sorted(files, key=lambda x: os.path.getmtime(os.path.join(input_path, x)))
 
 matcher = re.compile(input_filename) # 过滤文件名
 files = list(filter(lambda file: matcher.match(file), files))
