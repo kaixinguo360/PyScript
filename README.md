@@ -1,2 +1,2 @@
-# PythonScript
+# PyScript
 Some useful python scripts
