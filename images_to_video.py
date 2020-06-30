@@ -101,6 +101,7 @@ video_writer = imageio.get_writer(target + '_tmp.' + output_format, # 打开目�
         '-x264-params', 'keyint=1:scenecut=0']
     )
 video_size = None
+#video_size = (height, width)
 
 def is_same(img):
     global video_size
@@ -126,8 +127,6 @@ def show_status(status, file, img=None):
         if error_writer is None:
             error_writer = open(target + '.error.log', 'w')
         error_writer.write(log + '\n')
-
-    
 
 def resize_img(img):
     background = [0, 0, 0]
