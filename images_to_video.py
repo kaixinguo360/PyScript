@@ -1,13 +1,10 @@
 #!/usr/bin/python3
-import os, sys, math, re, json, imageio, cv2
-import exifread
+import os, sys, math, re, json
+import imageio, imageio_ffmpeg, cv2, exifread
 import numpy as np
 
 # Need some pylibs:
 # sudo -H pip install exifread imageio imageio-ffmpeg opencv-python numpy
-
-# Need some bin in $PATH
-# ffmpeg: Download from https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-4.3-win64-static.zip
 
 ##############################
 input_path = "."
@@ -85,6 +82,7 @@ if os.path.exists(target + '.' + output_format): # 判断目标是否存在
         exit()
 
 log_writer = open(target + '.log', 'w')
+error_writer = None
 
 #########
 # Video #
@@ -110,13 +108,21 @@ def is_same(img):
     return video_size[0] == size[0] and video_size[1] == size[1]
 
 def get_size(img):
-    size = np.shape(img)
-    return str(size[1]) + 'x' + str(size[0])
+    if img is None:
+        return '0x0';
+    else:
+        size = np.shape(img)
+        return str(size[1]) + 'x' + str(size[0])
 
-def show_status(status, file, img):
+def show_status(status, file, img=None):
     log = '{0}| {1} {2} {3}/{4}'.format(status, file, get_size(img), str(frame), str(all_frame))
     print(log)
     log_writer.write(log + '\n')
+    if status == 'X':
+        global error_writer
+        if error_writer is None:
+            error_writer = open(target + '.error.log', 'w')
+        error_writer.write(log + '\n')
 
     
 
@@ -138,7 +144,13 @@ def resize_img(img):
     return img
 
 def add_img_to_video(file):
-    img = imageio.imread(file)
+    try:
+        img = imageio.imread(file)
+    except Exception as e:
+        show_status('X', file)
+        raise e
+        return
+
     if is_same(img):
         show_status(' ', file, img)
     else:
@@ -235,22 +247,29 @@ frame = 0
 all_frame = len(files)
 
 for file in files: # 遍历图片
-    add_img(input_path + '/' + file)
-    frame = frame + 1
+    try:
+        add_img(input_path + '/' + file)
+        frame = frame + 1
+    except:
+        print('ERROR', 'An error occured, skip frame %d.' % frame)
+        all_frame = all_frame - 1
+        pass
 
-add_img(input_path + '/' + files[-1])
+add_img(input_path + '/' + files[all_frame - 1])
 
 video_writer.close()
 less_writer.close()
 more_writer.close()
 json_writer.close()
 log_writer.close()
+if not error_writer is None:
+    error_writer.close()
 
 #########
 # Merge #
 #########
 
-res = os.system('''ffmpeg \
+res = os.system('''{ffmpeg} \
     -i "{0}_tmp.{1}" \
     -i "{0}.srt" \
     -i "{0}.more.srt" \
@@ -269,7 +288,7 @@ res = os.system('''ffmpeg \
     -c:v copy \
     -c:s mov_text \
     "{0}.{1}"
-    '''.format(target, output_format))
+    '''.format(target, output_format, ffmpeg=imageio_ffmpeg.get_ffmpeg_exe()))
 
 if res == 0:
     os.remove(target + '_tmp.mp4')
