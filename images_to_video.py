@@ -1,22 +1,24 @@
 #!/usr/bin/python3
-import os, sys, math, re, json
+import os, sys, math, time, re, json
 import imageio, imageio_ffmpeg, cv2, exifread
 import numpy as np
 
 # Need some pylibs:
 # sudo -H pip install exifread imageio imageio-ffmpeg opencv-python numpy
 
-##############################
+##########
+# Params #
+##########
+
+# Default Params #
+
 input_path = "."
 input_filename = "IMG_\d+_.+.jpg"
 output_path = '.'
 output_filename = 'output'
 output_format = 'mp4'
-##############################
 
-##########
-# Params #
-##########
+# CLI Params #
 
 if len(sys.argv) == 1 or sys.argv[1] == '-h' or sys.argv[1] == '--help':
     print('''
@@ -57,6 +59,7 @@ output = `{}/{}.{}`
 # Prepare Input #
 
 files = os.listdir(input_path) # 得到文件夹下的所有文件名称
+
 # 按文件名排序
 files.sort()
 # 按时间排序
@@ -103,6 +106,9 @@ video_writer = imageio.get_writer(target + '_tmp.' + output_format, # 打开目�
 video_size = None
 #video_size = (height, width)
 
+prev_time = time.time()
+used_time = 0
+
 def is_same(img):
     global video_size
     size = np.shape(img)
@@ -119,8 +125,18 @@ def get_size(img):
         return str(size[1]) + 'x' + str(size[0])
 
 def show_status(status, file, img=None):
-    log = '{0}| {1} {2} {3}/{4}'.format(status, file, get_size(img), str(frame), str(all_frame))
+    if frame > 0:
+        global prev_time, used_time
+        now_time = time.time()
+        used_time = used_time + (now_time - prev_time)
+        prev_time = now_time
+        left_time = int((used_time / frame) * (all_frame - frame))
+    else:
+        left_time = 0
+    
+    log = '{0}| {1} {2} {3}/{4} {5}'.format(status, file, get_size(img), str(frame), str(all_frame), format_time(left_time))
     print(log)
+
     log_writer.write(log + '\n')
     if status == 'X':
         global error_writer
@@ -178,9 +194,6 @@ json_writer = open(target + '.json.srt', 'w')
 def add_line(line):
     subtitle_writer.write(str(line) + '\n')
 
-def get_time():
-    return '{:0>2d}:{:0>2d}:{:0>2d}'.format(int(frame/3600), int((frame%3600)/60), frame%60)
-
 # output: $TARGET.str
 def add_less_text_to_subtitle(tags, file):
     if 'Image DateTime' in tags:
@@ -214,6 +227,7 @@ def add_json_text_to_subtitle(tags, file):
 
 def add_exif_to_subtitle(file):
     global subtitle_writer
+    now_time = format_time(frame)
 
     f = open(file,'rb')
     tags = exifread.process_file(f, details=False)
@@ -221,21 +235,28 @@ def add_exif_to_subtitle(file):
 
     subtitle_writer = less_writer
     add_line(str(frame))
-    add_line('{0},{1:0>3d} --> {0},{2:0>3d}'.format(get_time(), 000, 999))
+    add_line('{0},{1:0>3d} --> {0},{2:0>3d}'.format(now_time, 000, 999))
     add_less_text_to_subtitle(tags, file)
     add_line('')
 
     subtitle_writer = more_writer
     add_line(str(frame))
-    add_line('{0},{1:0>3d} --> {0},{2:0>3d}'.format(get_time(), 000, 999))
+    add_line('{0},{1:0>3d} --> {0},{2:0>3d}'.format(now_time, 000, 999))
     add_more_text_to_subtitle(tags, file)
     add_line('')
 
     subtitle_writer = json_writer
     add_line(str(frame))
-    add_line('{0},{1:0>3d} --> {0},{2:0>3d}'.format(get_time(), 000, 999))
+    add_line('{0},{1:0>3d} --> {0},{2:0>3d}'.format(now_time, 000, 999))
     add_json_text_to_subtitle(tags, file)
     add_line('')
+
+#########
+# Utils #
+#########
+
+def format_time(time):
+    return '{:0>2d}:{:0>2d}:{:0>2d}'.format(int(time/3600), int((time%3600)/60), time%60)
 
 #############
 # Main Loop #
@@ -252,10 +273,9 @@ for file in files: # 遍历图片
     try:
         add_img(input_path + '/' + file)
         frame = frame + 1
-    except:
+    except Exception as e:
         print('ERROR', 'An error occured, skip frame %d.' % frame)
         all_frame = all_frame - 1
-        pass
 
 add_img(input_path + '/' + files[all_frame - 1])
 
