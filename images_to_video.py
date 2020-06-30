@@ -6,6 +6,12 @@ import numpy as np
 # Need some pylibs:
 # sudo -H pip install exifread imageio imageio-ffmpeg opencv-python numpy
 
+# Bugs:
+# 旋转 != 转置
+
+# TODO:
+# 使用https://exiftool.org/来完整备份EXIF数据
+
 ##########
 # Params #
 ##########
