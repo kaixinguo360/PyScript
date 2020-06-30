@@ -138,11 +138,13 @@ def show_status(status, file, img=None):
     print(log)
 
     log_writer.write(log + '\n')
+    log_writer.flush()
     if status == 'X':
         global error_writer
         if error_writer is None:
             error_writer = open(target + '.error.log', 'w')
         error_writer.write(log + '\n')
+        error_writer.flush()
 
 def resize_img(img):
     background = [0, 0, 0]
@@ -238,18 +240,21 @@ def add_exif_to_subtitle(file):
     add_line('{0},{1:0>3d} --> {0},{2:0>3d}'.format(now_time, 000, 999))
     add_less_text_to_subtitle(tags, file)
     add_line('')
+    subtitle_writer.flush()
 
     subtitle_writer = more_writer
     add_line(str(frame))
     add_line('{0},{1:0>3d} --> {0},{2:0>3d}'.format(now_time, 000, 999))
     add_more_text_to_subtitle(tags, file)
     add_line('')
+    subtitle_writer.flush()
 
     subtitle_writer = json_writer
     add_line(str(frame))
     add_line('{0},{1:0>3d} --> {0},{2:0>3d}'.format(now_time, 000, 999))
     add_json_text_to_subtitle(tags, file)
     add_line('')
+    subtitle_writer.flush()
 
 #########
 # Utils #
