@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import os, math, re, json, imageio, cv2
+import os, sys, math, re, json, imageio, cv2
 import exifread
 import numpy as np
 
@@ -17,6 +17,42 @@ output_filename = 'output'
 output_format = 'mp4'
 ##############################
 
+##########
+# Params #
+##########
+
+if len(sys.argv) == 1 or sys.argv[1] == '-h' or sys.argv[1] == '--help':
+    print('''
+Convert images to video
+-------
+Usage: {} <input_path> [output_filename] [filter_regex]
+Params:
+    input_path       Input file path
+    output_filename  Output file name: default: `{}/{}.{}`
+    filter_regex     Input file name filter regex, default: `{}`
+'''.format(__file__, input_filename, output_path, output_filename, output_format))
+    exit()
+else:
+    if len(sys.argv) >= 2:
+        input_path = sys.argv[1]
+        input_path = input_path.replace('\\', '/')
+        if input_path[-1] == '/':
+            input_path = input_path[:-1]
+    if len(sys.argv) >= 3:
+        output_path = os.path.dirname(sys.argv[2])
+        output_path = output_path if output_path != '' else '.'
+        output_filename = os.path.splitext(os.path.basename(sys.argv[2]))[0]
+        output_format = os.path.splitext(os.path.basename(sys.argv[2]))[1][1:]
+        output_format = output_format if output_format != '' else 'mp4'
+    if len(sys.argv) >= 4:
+        input_filename = sys.argv[3]
+    print('''
+Input params:
+-------
+input  = `{}/{}`
+output = `{}/{}.{}`
+'''.format(input_path, input_filename, output_path, output_filename, output_format))
+
 ###########
 # Prepare #
 ###########
@@ -30,7 +66,7 @@ matcher = re.compile(input_filename) # 过滤文件名
 files = list(filter(lambda file: matcher.match(file), files))
 
 if len(files) <= 0:
-    print('[ERROR]', 'No input file.')
+    print('[ERROR]', "Can't find any input files: {}/{}".format(input_path, input_filename))
     exit()
 
 # Prepare Output #
@@ -108,11 +144,11 @@ def add_img_to_video(file):
     else:
         t_img = np.transpose(img, (1, 0, 2))
         if is_same(t_img):
-            img = t_img
             show_status('R', file, img)
+            img = t_img
         else:
-            img = resize_img(img)
             show_status('C', file, img)
+            img = resize_img(img)
 
     video_writer.append_data(img)
 
